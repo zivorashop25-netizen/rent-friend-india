@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Admin Panel - Rent Friend India</title>
+
+  <link rel="stylesheet" href="/style.css">
+
+  <style>
+    body {
+      background: #f5f4f8;
+    }
+
+    .admin-header {
+      background: #171521;
+      color: white;
+      padding: 22px 0;
+    }
+
+    .admin-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .admin-title h1 {
+      font-size: 25px;
+    }
+
+    .admin-container {
+      padding: 45px 0;
+    }
+
+    .admin-login,
+    .admin-panel {
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .admin-card {
+      background: white;
+      border: 1px solid #e4e0eb;
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 25px;
+    }
+
+    .admin-card h2 {
+      margin-bottom: 20px;
+    }
+
+    .payment-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .payment-table th,
+    .payment-table td {
+      padding: 13px 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .payment-table th {
+      background: #f7f6fa;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b02a37;
+    }
+
+    .admin-message {
+      margin-top: 15px;
+      font-weight: 700;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+
+      .payment-table {
+        min-width: 850px;
+      }
+
+      .table-wrapper {
+        overflow-x: auto;
+      }
+
+      .admin-card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="admin-header">
+
+    <div class="container admin-title">
+
+      <h1>
+        Rent Friend India — Admin
+      </h1>
+
+      <button
+        class="btn btn-secondary"
+        onclick="adminLogout()"
+      >
+        Logout
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main class="admin-container">
+
+    <!-- LOGIN -->
+
+    <section
+      id="adminLoginSection"
+      class="admin-login"
+    >
+
+      <div class="admin-card">
+
+        <h2>
+          Admin Login
+        </h2>
+
+        <form id="adminLoginForm">
+
+          <div class="form-group">
+
+            <label>
+              Admin Email
+            </label>
+
+            <input
+              type="email"
+              id="adminEmail"
+              required
+              placeholder="Admin email"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              Admin Password
+            </label>
+
+            <input
+              type="password"
+              id="adminPassword"
+              required
+              placeholder="Admin password"
+            >
+
+          </div>
+
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+          >
+            Login
+          </button>
+
+          <p
+            id="adminLoginMessage"
+            class="admin-message"
+          ></p>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- PANEL -->
+
+    <section
+      id="adminPanel"
+      class="admin-panel hidden"
+    >
+
+      <div class="admin-card">
+
+        <h2>
+          Payment Approvals
+        </h2>
+
+        <p>
+          Yahan users ke submitted UTR aur payment status
+          check kar sakte ho.
+        </p>
+
+      </div>
+
+
+      <div class="admin-card">
+
+        <div class="table-wrapper">
+
+          <table class="payment-table">
+
+            <thead>
+
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Email</th>
+                <th>Amount</th>
+                <th>UTR</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+
+            </thead>
+
+            <tbody id="paymentsTable">
+
+              <tr>
+                <td colspan="8">
+                  Loading...
+                </td>
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script>
+
+    const loginSection =
+      document.getElementById(
+        "adminLoginSection"
+      );
+
+    const adminPanel =
+      document.getElementById(
+        "adminPanel"
+      );
+
+    const loginForm =
+      document.getElementById(
+        "adminLoginForm"
+      );
+
+    const loginMessage =
+      document.getElementById(
+        "adminLoginMessage"
+      );
+
+
+    /* CHECK ADMIN SESSION */
+
+    async function checkAdmin() {
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/admin/payments"
+          );
+
+        if (response.ok) {
+
+          loginSection.classList.add(
+            "hidden"
+          );
+
+          adminPanel.classList.remove(
+            "hidden"
+          );
+
+          loadPayments();
+
+        }
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    }
+
+
+    /* LOGIN */
+
+    loginForm.addEventListener(
+      "submit",
+      async function(event) {
+
+        event.preventDefault();
+
+        loginMessage.textContent =
+          "Logging in...";
+
+        try {
+
+          const email =
+            document.getElementById(
+              "adminEmail"
+            ).value.trim();
+
+          const password =
+            document.getElementById(
+              "adminPassword"
+            ).value;
+
+          const response =
+            await fetch(
+              "/api/admin-login",
+              {
+
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                body: JSON.stringify({
+                  email,
+                  password
+                })
+
+              }
+            );
+
+          const result =
+            await response.json();
+
+          if (!response.ok) {
+
+            throw new Error(
+              result.message ||
+              "Login failed"
+            );
+
+          }
+
+          loginMessage.textContent =
+            "Login successful.";
+
+          loginMessage.style.color =
+            "#198754";
+
+          loginSection.classList.add(
+            "hidden"
+          );
+
+          adminPanel.classList.remove(
+            "hidden"
+          );
+
+          loadPayments();
+
+        } catch (error) {
+
+          loginMessage.textContent =
+            error.message;
+
+          loginMessage.style.color =
+            "#b42318";
+
+        }
+
+      }
+    );
+
+
+    /* LOAD PAYMENTS */
+
+    async function loadPayments() {
+
+      const table =
+        document.getElementById(
+          "paymentsTable"
+        );
+
+      table.innerHTML = `
+        <tr>
+          <td colspan="8">
+            Loading payments...
+          </td>
+        </tr>
+      `;
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/admin/payments"
+          );
+
+        if (!response.ok) {
+
+          throw new Error(
+            "Admin session expired"
+          );
+
+        }
+
+        const result =
+          await response.json();
+
+        if (
+          !result.payments ||
+          result.payments.length === 0
+        ) {
+
+          table.innerHTML = `
+            <tr>
+              <td colspan="8">
+                No payment submissions yet.
+              </td>
+            </tr>
+          `;
+
+          return;
+
+        }
+
+
+        table.innerHTML =
+          result.payments
+            .map(paymentRow)
+            .join("");
+
+      } catch (error) {
+
+        table.innerHTML = `
+          <tr>
+            <td colspan="8">
+              ${escapeHtml(error.message)}
+            </td>
+          </tr>
+        `;
+
+      }
+
+    }
+
+
+    /* PAYMENT ROW */
+
+    function paymentRow(payment) {
+
+      let actions = "-";
+
+      if (payment.status === "pending") {
+
+        actions = `
+          <div class="action-buttons">
+
+            <button
+              class="btn btn-primary"
+              onclick="approvePayment(${payment.id})"
+            >
+              Approve
+            </button>
+
+            <button
+              class="btn btn-danger"
+              onclick="rejectPayment(${payment.id})"
+            >
+              Reject
+            </button>
+
+          </div>
+        `;
+
+      }
+
+      return `
+        <tr>
+
+          <td>
+            ${payment.id}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              payment.name || "-"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              payment.email || "-"
+            )}
+          </td>
+
+          <td>
+            ₹${payment.amount}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              payment.utr || "-"
+            )}
+          </td>
+
+          <td>
+            <span class="status ${payment.status}">
+              ${capitalize(payment.status)}
+            </span>
+          </td>
+
+          <td>
+            ${escapeHtml(
+              payment.created_at || "-"
+            )}
+          </td>
+
+          <td>
+            ${actions}
+          </td>
+
+        </tr>
+      `;
+    }
+
+
+    /* APPROVE */
+
+    async function approvePayment(id) {
+
+      const ok =
+        confirm(
+          "Kya aap is payment ko approve karna chahte ho?"
+        );
+
+      if (!ok) return;
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/admin/payments/" +
+            id +
+            "/approve",
+            {
+
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                note:
+                  "Payment verified by admin"
+              })
+
+            }
+          );
+
+        const result =
+          await response.json();
+
+        if (!response.ok) {
+
+          throw new Error(
+            result.message ||
+            "Approval failed"
+          );
+
+        }
+
+        alert(
+          "Payment approved successfully."
+        );
+
+        loadPayments();
+
+      } catch (error) {
+
+        alert(error.message);
+
+      }
+
+    }
+
+
+    /* REJECT */
+
+    async function rejectPayment(id) {
+
+      const ok =
+        confirm(
+          "Kya aap is payment ko reject karna chahte ho?"
+        );
+
+      if (!ok) return;
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/admin/payments/" +
+            id +
+            "/reject",
+            {
+
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                note:
+                  "Payment rejected by admin"
+              })
+
+            }
+          );
+
+        const result =
+          await response.json();
+
+        if (!response.ok) {
+
+          throw new Error(
+            result.message ||
+            "Rejection failed"
+          );
+
+        }
+
+        alert(
+          "Payment rejected."
+        );
+
+        loadPayments();
+
+      } catch (error) {
+
+        alert(error.message);
+
+      }
+
+    }
+
+
+    /* LOGOUT */
+
+    async function adminLogout() {
+
+      await fetch(
+        "/api/logout",
+        {
+          method: "POST"
+        }
+      );
+
+      location.reload();
+
+    }
+
+
+    /* HELPERS */
+
+    function capitalize(value) {
+
+      if (!value) return "";
+
+      return value.charAt(0).toUpperCase() +
+        value.slice(1);
+
+    }
+
+
+    function escapeHtml(value) {
+
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    }
+
+
+    checkAdmin();
+
+  </script>
+
+</body>
+</html>
